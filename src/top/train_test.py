@@ -54,4 +54,3 @@ if resume:
 else:
     xnet.build_model(show=True)
     xnet.train(epochs=epochs, model_path=model_path, batch_size=batch_size)
-    
