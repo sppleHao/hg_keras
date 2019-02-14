@@ -19,7 +19,7 @@ def post_process_heatmap(heatmap,kp_confidence=0.2):
         _map = gaussian_filter(_map,sigma=0.5)
         _nmsPeaks = non_max_supression(_map)
         
-        y,x = np.where(_nmsPeaks = _nmsPeaks.max())
+        y,x = np.where(_nmsPeaks == _nmsPeaks.max())
         
         if len(x)>0 and len(y)>0:
             kp_list.append((int(x[0]), int(y[0]), _nmsPeaks[y[0], x[0]]))
