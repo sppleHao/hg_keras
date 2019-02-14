@@ -29,7 +29,7 @@ class EvalCallBack(keras.callbacks.Callback):
         return self.foldpath
     
     def run_eval(self,epoch):
-        val_data = MPIIDataGen(jsonfile='../../data/mpii_annotations.json',imgpath='../../data/mpii/images',inres=self.inrese,outres=self.outres,is_train=False)
+        val_data = MPIIDataGen(jsonfile='../../data/mpii_annotations.json',imgpath='../../data/mpii/images',inres=self.inres,outres=self.outres,is_train=False)
         
         total_success , total_fail = 0 ,0
         threshold = 0.5
