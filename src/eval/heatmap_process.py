@@ -34,5 +34,5 @@ def post_process_heatmap(heatmap,kp_confidence=0.2):
 def non_max_supression(plain,window_size=3,threshold=1e-6):
     under_th_indicis = plain <threshold
     plain[under_th_indicis] = 0
-    return plain * (plain == maximum_filter(plain,footprint=np.ones(window_size,window_size)))
+    return plain * (plain == maximum_filter(plain,footprint=np.ones((window_size,window_size))))
 
