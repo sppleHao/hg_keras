@@ -19,8 +19,8 @@ from hourglass import HourglassNet
 # In[4]:
 
 
-batch_size = 8
-model_path = '../../trained_models/'
+batch_size = 16
+model_path = '../../trained_models/test'
 resume = False
 num_stacks = 2
 epochs = 1
