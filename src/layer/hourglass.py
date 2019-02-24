@@ -76,7 +76,7 @@ class HourglassNet(object):
         self.model.fit_generator(generator=train_gen, steps_per_epoch=train_dataset.get_dataset_size() // batch_size,initial_epoch=init_epoch, epochs=epochs, callbacks=xcallbacks)
         
         
-    def load_model(self,model_path):
+    def load_model(self , model_path):
         self.model = load_model(model_path)
     
     def inference_rgb(self, rgbdata, orgshape, mean=None):
