@@ -18,7 +18,7 @@ from data_process import normalize
 import numpy as np
 import os
 
-from layers import create_hourglass_network,residual
+from layers import create_hourglass_network,residual,residual_mobile
 from mpii_datagen import MPIIDataGen
 from eval_callback import EvalCallBack
 
@@ -36,7 +36,8 @@ class HourglassNet(object):
     
     def build_model(self,mobile=False,show=False):
         if mobile:
-            pass
+            self.model = create_hourglass_network(self.num_classes, self.num_stacks,
+                                                  self.num_channels, self.inres, self.outres, residual_mobile)
         else:
             self.model = create_hourglass_network(self.num_classes, self.num_stacks,
                                                   self.num_channels, self.inres, self.outres, residual)
