@@ -13,6 +13,18 @@ import copy
 from heatmap_process import post_process_heatmap
 
 
+def get_predicted_kp_from_htmap(heatmap, meta, outres):
+    # nms to get location
+    kplst = post_process_heatmap(heatmap)
+    kps = np.array(kplst)
+
+    # use meta information to transform back to original image
+    mkps = copy.copy(kps)
+    for i in range(kps.shape[0]):
+        mkps[i, 0:2] = data_process.transform(kps[i], meta['center'], meta['scale'], res=outres, invert=1, rot=0)
+
+    return mkps
+
 # In[6]:
 def cal_kp_distance(pre_kp, gt_kp, norm, threshold):
     if gt_kp[0] > 1 and gt_kp[1] > 1:
