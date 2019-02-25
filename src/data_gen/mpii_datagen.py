@@ -7,7 +7,7 @@
 import os
 import numpy as np
 from random import shuffle
-import scipy.misc
+import scipy.ndimage
 import json
 import data_process
 import random
@@ -91,7 +91,7 @@ class MPIIDataGen(object):
     
     def process_image(self, sample_index, kpanno, sigma, rot_flag, scale_flag, flip_flag):
         imagefile = kpanno['img_paths']
-        image = scipy.misc.imread(os.path.join(self.imgpath, imagefile))
+        image = scipy.ndimage.imread(os.path.join(self.imgpath, imagefile))
 
         # get center
         center = np.array(kpanno['objpos'])

@@ -24,6 +24,14 @@ def convBlock(inputs,num_out_channels,name):
     x = BatchNormalization()(x)
     return x
 
+def convBlock_mobile(inputs,num_out_channels,name):
+    x = SeparableConv2D(num_out_channels // 2,kernel_size=(1,1),activation='relu',padding='same',name=name+'_conv_1x1_x1')(inputs)
+    x = BatchNormalization()(x)
+    x = SeparableConv2D(num_out_channels // 2,kernel_size=(3,3),activation='relu',padding='same',name=name+'_conv_3x3_x2')(x)
+    x = BatchNormalization()(x)
+    x = SeparableConv2D(num_out_channels , kernel_size=(1,1),activation='relu',padding='same',name=name+'_conv_1x1_x3')(x)
+    x = BatchNormalization()(x)
+    return x
 
 # In[63]:
 
@@ -33,6 +41,13 @@ def skipLayer(inputs,num_out_channels,name):
         skip=inputs
     else:
         skip=Conv2D(num_out_channels,kernel_size=(1,1),activation='relu',padding='same',name=name+'_skip_conv')(inputs)
+    return skip
+
+def skipLayer_mobile(inputs,num_out_channels,name):
+    if K.int_shape(inputs)[-1]==num_out_channels:
+        skip=inputs
+    else:
+        skip=SeparableConv2D(num_out_channels,kernel_size=(1,1),activation='relu',padding='same',name=name+'_skip_conv')(inputs)
     return skip
 
 
@@ -45,6 +60,11 @@ def residual(inputs, num_out_channels, name):
     add = Add()([convb,skip])  
     return add
 
+def residual_mobile(inputs, num_out_channels, name):
+    convb = convBlock_mobile(inputs,num_out_channels,name+'convBlock')
+    skip = skipLayer_mobile(inputs,num_out_channels,name+'skipLayer')
+    add = Add()([convb,skip])  
+    return add
 
 # In[65]:
 
@@ -127,15 +147,18 @@ def create_left_half_blocks(inputs, residual_type, num_channels,hg_id):
 
 
 def create_right_half_blocks(left_features,residual_type,num_channels,hg_id):
+    
+    name = 'hg_'+ str(hg_id)
+    
     lf1 ,lf2 ,lf4 ,lf8 = left_features
     
     rf8 = bottom_layer(lf8, residual_type, num_channels,hg_id)
     
-    rf4 = connect_left_to_right(lf4,rf8,residual_type,num_channels,str(hg_id)+'_rf4')
+    rf4 = connect_left_to_right(lf4,rf8,residual_type,num_channels,name+'_rf4')
     
-    rf2 = connect_left_to_right(lf2,rf4,residual_type,num_channels,str(hg_id)+'_rf2')
+    rf2 = connect_left_to_right(lf2,rf4,residual_type,num_channels,name+'_rf2')
     
-    rf1 = connect_left_to_right(lf1,rf2,residual_type,num_channels,str(hg_id)+'_rf1')
+    rf1 = connect_left_to_right(lf1,rf2,residual_type,num_channels,name+'_rf1')
 
     return rf1
 
@@ -146,11 +169,14 @@ def create_right_half_blocks(left_features,residual_type,num_channels,hg_id):
 def bottom_layer(lf8, residual_type, num_channels,hg_id):
     # blocks in lowest resolution
     # 3 residual blocks + Add
-    lf8_connect = residual_type(lf8,num_channels,str(hg_id)+'_lf8')
     
-    x = residual_type(lf8,num_channels,str(hg_id)+'_lf8_resi_x1')
-    x = residual_type(x,num_channels,str(hg_id)+'_lf8_resi_x2')
-    x = residual_type(x,num_channels,str(hg_id)+'_lf8_resi_x3')
+    name = 'hg_'+ str(hg_id)
+    
+    lf8_connect = residual_type(lf8,num_channels,name+'_lf8')
+    
+    x = residual_type(lf8,num_channels,name+'lf8_resi_x1_') #error reason: tensor name must start with letter
+    x = residual_type(x,num_channels,name+'lf8_resi_x2_')
+    x = residual_type(x,num_channels,name+'lf8_resi_x3_')
     
     add = Add()([x,lf8_connect])
     
@@ -166,10 +192,10 @@ def connect_left_to_right(lf,rf,residual_type,num_channels,name):
     # right upsampling
     # connect layers and with 1 residual 
     
-    xleft = residual_type(lf,num_channels,name+'_connect_left_resi')
+    xleft = residual_type(lf,num_channels,name+'_connect_left_resi_')
     xright = UpSampling2D()(rf)
     add = Add()([xleft,xright])
-    out = residual_type(add,num_channels,name+'_connect')
+    out = residual_type(add,num_channels,name+'_connect_')
     
     return out
 
@@ -180,17 +206,17 @@ def connect_left_to_right(lf,rf,residual_type,num_channels,name):
 def create_heads(pre_layer_features, rf1, num_classes, num_channels, hg_id):
     # two head, one head to next stage, one head to intermediate features
     
-    name = '_head'
+    name = 'head_'+str(hg_id)
     
-    head = Conv2D(num_channels,kernel_size=(1,1),activation='relu',padding='same',name=str(hg_id)+name+'_conv_1x1_x1')(rf1)
+    head = Conv2D(num_channels,kernel_size=(1,1),activation='relu',padding='same',name=name+'_conv_1x1_x1')(rf1)
     head = BatchNormalization()(head)
     
     # for head as intermediate supervision, use 'linear' as activation.
-    head_parts = Conv2D(num_classes,kernel_size=(1,1),activation='linear',padding='same',name=str(hg_id)+name + '_conv_1x1_parts')(head)
+    head_parts = Conv2D(num_classes,kernel_size=(1,1),activation='linear',padding='same',name=name + '_conv_1x1_parts')(head)
     
     # use linear activations
-    head_connect = Conv2D(num_channels,kernel_size=(1,1),activation='linear',padding='same',name=str(hg_id)+ name +'_conv_1x1_x2')(head)
-    head_parts_connect = Conv2D(num_channels,kernel_size=(1,1),activation='linear',padding='same',name=str(hg_id)+ name+'_conv_1x1_x3')(head_parts)
+    head_connect = Conv2D(num_channels,kernel_size=(1,1),activation='linear',padding='same',name=name +'_conv_1x1_x2')(head)
+    head_parts_connect = Conv2D(num_channels,kernel_size=(1,1),activation='linear',padding='same',name=name+'_conv_1x1_x3')(head_parts)
     
     # connect 
     head_next_stage = Add()([head_connect,head_parts_connect,pre_layer_features])
